@@ -114,13 +114,25 @@ fn oauth_client() -> BasicClient {
     .set_redirect_uri(RedirectUrl::new(redirect_url).unwrap())
 }
 
-async fn discord_auth(State(client): State<BasicClient>) -> impl IntoResponse {
+async fn discord_auth(
+    State(client): State<BasicClient>,
+    State(store): State<MemoryStore>,
+) -> impl IntoResponse {
     let (auth_url, _csrf_token) = client
         .authorize_url(CsrfToken::new_random)
         .add_scope(Scope::new(SCOPE.to_string()))
         .url();
 
-    Redirect::to(auth_url.as_ref())
+    let mut session = Session::new();
+    session.insert("csrf_token", &_csrf_token).unwrap();
+
+    let cookie = store.store_session(session).await.unwrap().unwrap();
+
+    let cookie = format!("{COOKIE_NAME}={cookie}; SameSite=Lax; Path=/");
+    let mut headers = HeaderMap::new();
+    headers.insert(SET_COOKIE, cookie.parse().unwrap());
+
+    (headers, Redirect::to(auth_url.as_ref()))
 }
 
 #[derive(Debug, Deserialize)]
