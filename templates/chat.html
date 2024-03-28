@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}HTMX CHAT{% endblock %}
+{% block head %}<style></style>{% endblock %}
+{% block content %}
+<script>
+    htmx.on("htmx:wsAfterSend", (e) => {
+        document.getElementById("form").reset();
+    });
+</script>
+<div hx-ext="ws" ws-connect="/ws">
+    <form id="form" ws-send>
+        <input type="text" name="message" placeholder="Message" autocomplete="off" />
+    </form>
+    <div id="messages">
+    </div>
+</div>
+{% endblock %}
